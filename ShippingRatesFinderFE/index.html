@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang='eng'>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Shipping rates finder</title>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">    <!-- JQuery -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN" crossorigin="anonymous"></script>    <!-- Popper.js -->
+    <!-- Popper.js -->
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <!-- JavaScript -->
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+    <link rel="stylesheet" href=css/style.css>
+</head>
+<body>
+<div class="testbox">
+    <!-- da aggiungere se subtmit -->
+    <form action="/">
+        <h2>Shipping rates finder</h2>
+        <h4></h4>
+        <p1>DEPARTURE
+            <!-- per metterli orizzontale ho abbassato la grandezza degli input e automaticamento messo inline-->
+            <!-- MODIFICATO WEIDTH :CALC IN INPUTS NEL FILE CSS-->
+            <input class="Country" type="text" name="Country" placeholder="Country" />
+
+
+            <input class="Postal Code" type="text" name="Postal code" placeholder="Postal Code" />
+
+            <input class="City" type="text" name="City" placeholder="City" /> </p1>
+
+        <!-- ho inserito il button al centro e nel file css ho aggiunto il margin per posizionarlo -->
+
+
+
+        <!-- -->
+        <!-- -->
+
+        <h3></h3>
+        <p3>DESTINATION
+            <input class="Country" type="text" name="Country" placeholder="Country" />
+            <h4></h4>
+
+            <input class="Postal Code" type="text" name="Postal code" placeholder="Postal code" />
+
+
+
+            <input class="City" type="text" name="City" placeholder="City" /> </p3>
+
+        <button onclick="visualizza('form')">Inizia la ricerca</button>
+
+
+    </form>
+</div>
+
+<!-- Inizio codice DIV #immagine  HO AGGIUNTO IL PLACEHOLDER CHE METTE SUGGERIMENTI A SCOMPARSA-->
+<div id="form" style="display:none"><formato>
+        <textarea name="messaggio" id="messaggio" cols="30" rows="10" placeholder="qui usciranno i results">
+
+        </textarea>
+</formato ></div>
+
+<!-- -->
+<!-- Site footer -->
+<footer class="site-footer">
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-12 col-md-6">
+                <h6>About</h6>
+                <p class="text-justify">SHIPPING RATES FINDER</p>
+                <hr>
+            </div>
+            <!-- SVILUPPATORI -->
+
+            <div class="col-xs-6 col-md-3">
+                <h6>DEVELOPERS</h6>
+                <ul class="footer-links">
+                    <li><a >Lorenzo Guerrini</a></li>
+                    <li><a >Alessandro Lupoli</a></li>
+                </ul>
+
+            </div>
+
+
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-8 col-sm-6 col-xs-12">
+                        <p class="copyright-text">Copyright &copy; 2022 All Rights Reserved by
+                            <a href="#">Shipping rates finder</a>.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+<script language="JavaScript" type="text/javascript"  src="js/jscript.js"></script>
+</body>
+
+</html>
+
