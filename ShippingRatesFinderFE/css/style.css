@@ -78,18 +78,8 @@ form {
     border-radius: 20%;
 
 }
-@media screen and (min-width: 600px){
-    form{
-        padding: 30px;
-        padding-bottom:15%;
 
-    }
-}
-@media screen and (min-width: 600px){
-    form{
 
-    }
-}
 
 
 
@@ -234,18 +224,7 @@ button {
 
 
 }
-@media screen and (min-width: 767px){
-button{
 
-
-    position: absolute;
-    top: 77%;
-
-    margin: 30px;
-    padding: 15px;
-    left: 60%;
-}
-}
 @media screen and (min-width: px){
     button{
         position: absolute;
