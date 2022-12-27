@@ -220,16 +220,7 @@ button {
 }
 @media screen and (min-width: 576px){
 button{
-    margin:25px;
-    width: 140px;
-    padding: 10px;
-    border: none;
-    -webkit-border-radius: 5px;
-    -moz-border-radius: 5px;
-    border-radius: 10px;
-    background-color: black;
-    font-size: 16px;
-    color: #fff;
+
     cursor: pointer;
     position: absolute;
     top: 110px;
