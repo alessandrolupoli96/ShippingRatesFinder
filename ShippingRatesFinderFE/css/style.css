@@ -1,11 +1,10 @@
 
 
 html, body {
-    background-image: url(/images/imago.jpg);
+    background-image: url(/ShippingRatesFinderFE/images/imago.jpg);
 
 
 }
-
 #show-hide {
 
     border: 1px solid black;
