@@ -290,6 +290,47 @@ def spedireComodo(height, width, depth, weight, senderCountry, senderCity, sende
         '''
     return json.dumps(parsed)
 
+def sendABox(height, width, depth, weight, senderCountry, senderCity, senderPostCode, receiverCountry, receiverCity, receiverPostCode):
+    #bug sito, impossibile proseguire: https://www.sendabox.it/
+
+#packLink ok
+def packLink(height, width, depth, weight, senderCountry, senderCity, senderPostCode, receiverCountry, receiverCity,receiverPostCode):
+    def getLocalita(query):
+        localita=s.get('https://www.packlink.it/default/ajaxpostalcodesrequest?loc=113&contain=true&selected=&original=&zip={}'.format(query))
+        localita=json.loads(localita.content)
+        if len(localita)==1:
+            return localita[0]['value']
+        else:
+            print('errore')
+
+    payload={
+        'HomeForm[locationFrom]': '113',
+        'HomeForm[zipcodeFrom]': str(getLocalita(senderCity)),
+        'HomeForm[fldFrom]': '80028 - Grumo Nevano',
+        'HomeForm[locationTo]': '113',
+        'HomeForm[zipcodeTo]': str(getLocalita(receiverCity)),
+        'HomeForm[fldTo]': '80027 - Frattamaggiore',
+        'ParcelForm[0][weight]': str(weight),
+        'ParcelForm[0][length]': str(depth),
+        'ParcelForm[0][width]': str(width),
+        'ParcelForm[0][height]': str(height)
+    }
+    r = s.post('https://www.packlink.it/', headers=headers, data=payload, allow_redirects=True)
+    soup = BeautifulSoup(r.content, 'html.parser')
+    data=soup.find('div', {'class':'com-search-results__quotes-container'})['data-services']
+    table=json.loads(data)
+    parsed = []
+    for row in table:
+        courier=row['carrier_name']+' '+row['service_name']
+        dataRitiro='{}/{}/{}'.format(row['origin']['day'],row['origin']['month'],row['origin']['year'])
+        costo=round(float(row['base_price']) if row['tax_included'] else float(row['base_price'])*IVA,2)
+        pickupType='point' if row['dropoff'] else 'normal'
+        deliveryType='point' if row['delivery_to_parcelshop'] else 'normal'
+        assicurazione='si'
+        contrassegno='si' if row['cash_on_delivery']['offered'] else 'no'
+        deliveryTime=int(row['transit_weight'])
+        parsed.append({'portalName':'packLink','courierName':courier,'price':costo,'pickupType':pickupType,'deliveryType':deliveryType,'assicurazione':assicurazione,'contrassegno':contrassegno,'pickupDate':dataRitiro,'deliveryTime':deliveryTime,'bonusCredits':'no'})
+    return json.dumps(parsed)
 
 
 '''
