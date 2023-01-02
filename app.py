@@ -1,13 +1,14 @@
 '''
-https://www.parcelscout.com/
-https://www.sendabox.it/
-https://www.truckpooling.it/it
-https://www.packlink.it/
-https://www.spedire.com/
-https://www.spedirecomodo.it/
-https://www.spedirebest.it/
-https://www.ioinvio.it/
-https://spediamo.it/
+[] https://www.parcelscout.com/
+[] https://www.sendabox.it/
+[ok] https://www.truckpooling.it/it
+[] https://www.packlink.it/
+[] https://www.spedire.com/
+[] https://www.spedirecomodo.it/
+[ok] https://www.spedirebest.it/
+[] https://www.ioinvio.it/
+[] https://spediamo.it/
+[ok] https://www.mysmartcourier.it/
 '''
 
 import requests
@@ -41,6 +42,21 @@ def getJsonRates():
     result=algo(height=request.form['height'], width=request.form['width'], depth=request.form['depth'], weight=request.form['weight'], senderCountry=request.form['senderCountry'], senderCity=request.form['senderCity'], senderPostCode=request.form['senderPostCode'], receiverCounty=request.form['receiverCountry'], receiverCity=request.form['receiverCity'], receiverPostCode=request.form['receiverPostCode'])    #return jsonify(result)
     return result
 
+'''
+forma parsed={
+    'portalName': stringa contente il nome del portale,
+    'courierName': stringa contenente il nome del corriere,
+    'price': float costo di spedizione (coprensiva IVA),
+    'pickupType': tipologia di ritiro (normal=ritiro presso domicilio, point=ritiro presso point, mix=sia domicilio sia point),
+    'deliveryType': tipologia di consegna (normal=ritiro presso domicilio, point=ritiro presso point, mix=sia domicilio sia point),
+    'assicurazione': assicurazione presente (stringa 'si', stringa 'no'),
+    'contrassegno': contrassegno presente (stringa 'si', stringa 'no'),
+    'pickupDate': data ritiro (stringa dd/mm/aa),
+    'deliveryTime': tempo stimata di consegna ({min=intero numero di ore, max=intero numero di ore})
+    'bonusCredits': possibilità sconti o promo speciali (stringa 'si', stringa 'no')
+}
+'''
+
 #mySmartCourier ok
 def mySmartCourier(height, width, depth, weight, senderCountry, senderCity, senderPostCode, receiverCountry, receiverCity, receiverPostCode):
     def getLocalita(country,query):
@@ -72,13 +88,14 @@ def mySmartCourier(height, width, depth, weight, senderCountry, senderCity, send
             courier=cols[0].findAll('div', {'class': 'fusion-text'})[0].find('p').text
             dataRitiro, tempoDelivery=(x.findAll('p')[-1].text.strip() for x in cols[1].findAll('div', {'class': 'fusion-text'}))
             contrassegno, assicurazione=(x.text.strip().split()[-1] for x in cols[2].findAll('div', {'class': 'fusion-text'})[-1].findAll('p')[1:])
-            costo=float(cols[3].findAll('div', {'class': 'fusion-text'})[0].find('h2').text.split()[-1].replace(',','.'))*IVA
+            costo=round(float(cols[3].findAll('div', {'class': 'fusion-text'})[0].find('h2').text.split()[-1].replace(',','.'))*IVA,2)
             #parsed.append([courier,dataRitiro,tempoDelivery,contrassegno,assicurazione,costo])
             parsed.append({'portalName':'mySmartCourier','courierName':courier,'price':costo,'pickupType':'normal','deliveryType':'normal','assicurazione':assicurazione,'pickupDate':dataRitiro,'deliveryTime':tempoDelivery,'bonusCredits':'no'})
     return json.dumps(parsed)
 
 #spedireBest ok
 def spedireBest(height, width, depth, weight, senderCountry, senderCity, senderPostCode, receiverCountry, receiverCity, receiverPostCode):
+    #TODO: ricerca località necessariamente con il nome
     #bisogna aggiornare il cookie altrimenti fallisce
     s = requests.session()
     s.headers.update(headers)
@@ -121,29 +138,169 @@ def spedireBest(height, width, depth, weight, senderCountry, senderCity, senderP
     result=json.loads(r.content)
     parsed=[]
     courierIDs= {2:'SDA'}
-    parsed.append({'portalName':'SpedireBest','courierName':courierIDs[result['corriere_id']],'price':result['quote']['eur_totale'],'pickupType':'normal','deliveryType':'normal','assicurazione':'no','pickupDate':result['data']['spedizione_data_ritiro'],'deliveryTime':'missing','bonusCredits':'no'})
+    price=float(result['quote']['eur_totale'])
+    pickupDate=result['data']['spedizione_data_ritiro']
+    parsed.append({'portalName':'SpedireBest','courierName':courierIDs[result['corriere_id']],'price':price,'pickupType':'normal','deliveryType':'normal','assicurazione':'no','pickupDate':pickupDate,'deliveryTime':None,'bonusCredits':'no'})
+    return json.dumps(parsed)
+
+#truckPooling ok
+def truckPooling(height, width, depth, weight, senderCountry, senderCity, senderPostCode, receiverCountry, receiverCity, receiverPostCode):
+    def getLocalita(query):
+        headers['X-OCTOBER-REQUEST-HANDLER']='localities::onLocalitySearch'
+        headers['X-OCTOBER-REQUEST-PARTIALS']=''
+        localita=s.post('https://www.truckpooling.it/it', data={'term':'{}'.format(query),'country':'Italia'}, headers=headers)
+        localita=json.loads(localita.content)
+        if localita['result']!='[]':
+            data=json.loads(localita['result'])
+            if len(data)==1:
+                return str(data[0]['id'])
+            else:
+                print('errore')
+        else:
+            print('errore')
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36",
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': '*/*',
+    }
+    r=s.get('https://www.truckpooling.it/it', headers=headers)
+    soup = BeautifulSoup(r.content, 'html.parser')
+    payload={
+        '_session_key': soup.find('input',{'name':'_session_key'}).get('value'),
+        '_token': soup.find('input',{'name':'_token'}).get('value'),
+        'packageType': 'pack',
+        'fromCountry':'Italia',
+        'fromLocality': str(getLocalita(senderCity)),
+        'toCountry':'Italia',
+        'toLocality': str(getLocalita(receiverCity)),
+        'packageNumber0':'1',
+        'package-weight0': str(weight),
+        'package-height0':str(height),
+        'package-width0': str(width),
+        'package-depth0':str(depth)
+    }
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36",
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': '*/*',
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-OCTOBER-REQUEST-FLASH': '1',
+        'X-OCTOBER-REQUEST-HANDLER': "priceList::onShipmentEdit",
+        'X-OCTOBER-REQUEST-PARTIALS': ''
+    }
+    r = s.post('https://www.truckpooling.it/it/compare-prices', headers=headers, data=payload)
+    data=json.loads(r.content)['#price-list-table']
+    soup = BeautifulSoup(data, 'html.parser')
+    parsed=[]
+    table=soup.find('table', {"class": 'table compare'})
+    resultList=table.findAll('tr')
+    for row in resultList:
+        cols=row.findAll('td')
+        deliveryTime=cols[0].find('div', {"class": "text-time-large"}).span.text.strip()
+        courier=cols[1].div.span.text.strip()+' '+cols[1].div.span.next_sibling.text.strip()
+        dataRitiro=cols[2].find('div', {'class': 'shipping-date-block'}).span.text
+        costo=float(cols[5].find('div', {'class':'accent-text price'}).next.strip()[2:].replace(',', '.'))
+        if len(cols[2].find('span', {'class': 'shipping-place-caption'}).get_text(separator='<br/>').strip().split('<br/>'))==2:
+            pickupType='mix'
+        else:
+            pickupType='normal' if cols[2].find('span', {'class': 'shipping-place-caption'}).text.strip()=='presso domicilio/ufficio' else 'point'
+        if len(cols[3].find('span', {'class': 'shipping-place-caption'}).get_text(separator='<br/>').strip().split('<br/>'))==2:
+            deliveryType='mix'
+        else:
+            deliveryType='normal' if cols[3].find('span', {'class': 'shipping-place-caption'}).text.strip()=='presso domicilio/ufficio' else 'point'
+        extraServices=cols[4].find('div', {'class': 'additionalServices'}).ul['data-additional-services'].split(',')
+        assicurazione='si' if 'insurance' in extraServices else 'no'
+        contrassegno='si' if 'codContanti' in extraServices else 'no'
+        parsed.append({'portalName':'mySmartCourier','courierName':courier,'price':costo,'pickupType':pickupType,'deliveryType':deliveryType,'assicurazione':assicurazione,'contrassegno':contrassegno,'pickupDate':dataRitiro,'deliveryTime':{'min':deliveryTime,'max':deliveryTime},'bonusCredits':'no'})
+    return json.dumps(parsed)
+
+'''
+forma parsed={
+    'portalName': stringa contente il nome del portale. Es: parcelscout, sendabox,
+    'courierName': stringa contenente il nome del corriere. ES: SDA, ups,
+    'price': float costo di spedizione (coprensiva IVA),
+    'pickupType': tipologia di ritiro (normal=ritiro presso domicilio, point=ritiro presso punto raccolta, mix=sia domicilio sia point),
+    'deliveryType': tipologia di consegna (normal=ritiro presso domicilio, point=ritiro presso point, mix=sia domicilio sia point),
+    'assicurazione': assicurazione presente (stringa 'si', stringa 'no'),
+    'contrassegno': contrassegno presente (stringa 'si', stringa 'no'),
+    'pickupDate': data ritiro (stringa dd/mm/aa),
+    'deliveryTime': tempo stimata di consegna ({min=intero numero di ore, max=intero numero di ore} oppure None)
+    'bonusCredits': possibilità sconti o promo speciali (stringa 'si', stringa 'no')
+}
+'''
+def algo(height, width, depth, weight, senderCountry, senderCity, senderPostCode, receiverCounty, receiverCity, receiverPostCode):
+    return jsonify(mySmartCourier(height, width, depth, weight, senderCountry, senderCity, senderPostCode, receiverCounty, receiverCity, receiverPostCode))
+
+def spedireComodo(height, width, depth, weight, senderCountry, senderCity, senderPostCode, receiverCountry, receiverCity, receiverPostCode):
+    def getLocalita(query):
+        localita=s.post('https://www.spedirecomodo.it/Shipping/GetAddress', data={'dataType':'json','nazione':'IT','terminericerca':'{}'.format(query)})
+        localita=json.loads(localita.content)
+        if len(localita)==1:
+            return localita[0]['Id']
+        else:
+            print('errore')
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36",
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': '*/*',
+    }
+    payload={
+        'PackageTipoCollo': '0',
+        'PackageNazioneNome': 'Italy',
+        'PackageXNazione': 'IT',
+        'PackageXSelectedCap': '',
+        'PackageXCap': '80028',
+        'PackageXIdLocalita': str(getLocalita(senderCity)),
+        'PackageYNazione': 'IT',
+        'PackageYSelectedCap': '',
+        'PackageYCap': '80027',
+        'PackageYIdLocalita': str(getLocalita(receiverCity)),
+        'PackagePeso': str(weight),
+        'PackageHeight': str(height),
+        'PackageWidth': str(width),
+        'PackageDepth': str(depth)
+    }
+    r = s.post('https://www.spedirecomodo.it/', headers=headers, data=payload)
+    data=json.loads(r.content)['#price-list-table']
+    soup = BeautifulSoup(data, 'html.parser')
+    parsed=[]
+    '''
+    table=soup.find('table', {"class": 'table compare'})
+    resultList=table.findAll('tr')
+    for row in resultList:
+        cols=row.findAll('td')
+        deliveryTime=cols[0].find('div', {"class": "text-time-large"}).span.text.strip()
+        courier=cols[1].div.span.text.strip()+' '+cols[1].div.span.next_sibling.text.strip()
+        dataRitiro=cols[2].find('div', {'class': 'shipping-date-block'}).span.text
+        costo=float(cols[5].find('div', {'class':'accent-text price'}).next.strip()[2:].replace(',', '.'))
+        if len(cols[2].find('span', {'class': 'shipping-place-caption'}).get_text(separator='<br/>').strip().split('<br/>'))==2:
+            pickupType='mix'
+        else:
+            pickupType='normal' if cols[2].find('span', {'class': 'shipping-place-caption'}).text.strip()=='presso domicilio/ufficio' else 'point'
+        if len(cols[3].find('span', {'class': 'shipping-place-caption'}).get_text(separator='<br/>').strip().split('<br/>'))==2:
+            deliveryType='mix'
+        else:
+            deliveryType='normal' if cols[3].find('span', {'class': 'shipping-place-caption'}).text.strip()=='presso domicilio/ufficio' else 'point'
+        extraServices=cols[4].find('div', {'class': 'additionalServices'}).ul['data-additional-services'].split(',')
+        assicurazione='si' if 'insurance' in extraServices else 'no'
+        contrassegno='si' if 'codContanti' in extraServices else 'no'
+        parsed.append({'portalName':'mySmartCourier','courierName':courier,'price':costo,'pickupType':pickupType,'deliveryType':deliveryType,'assicurazione':assicurazione,'contrassegno':contrassegno,'pickupDate':dataRitiro,'deliveryTime':{'min':deliveryTime,'max':deliveryTime},'bonusCredits':'no'})
+        '''
     return json.dumps(parsed)
 
 
-def algo(height, width, depth, weight, senderCountry, senderCity, senderPostCode, receiverCounty, receiverCity, receiverPostCode):
-    '''
-    portalName= nome portale. Es: parcelscout, sendabox
-    courierName= nome vettore. ES. SDA, ups
-    price= costo spedizione inclusa iva
-    pickupType= tipo di ritiro. ES. Domicilio, punto raccolta
-    deliverType= tipo di consegna. ES. Domicilio, punto raccolta
-    assicurazione= si/no
-    pickupDate= data ritiro
-    deliveryTime= tempo della spedizione
-    bonusCredits= si/no.
-    '''
-    return jsonify(mySmartCourier(height, width, depth, weight, senderCountry, senderCity, senderPostCode, receiverCounty, receiverCity, receiverPostCode))
 
 '''
 FEATURES LIST
 #javascript: controllo campi se sono corretti
 #ordina per: più economico, più veloce, 
 #sconto: possibilità di ricevere codici promozionali per gli utenti registrati
+'''
+'''
+with open('data2.html', 'wb') as f:
+    f.write(r.content)
 '''
 
 if __name__ == "__main__":
@@ -242,19 +399,4 @@ def spedireDotCom():
 
     r = s.post('https://www.spedire.com/api/shipment-request/first', headers=headers, data=test)
 
-
-'''
-with open('data.html', 'wb') as f:
-    f.write(r.content)
-'''
-
-
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
-
-
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
 
