@@ -16,18 +16,18 @@
 <body>
 <div class="testbox">
     <!-- da aggiungere se subtmit -->
-    <form action="/">
+    <form action="/"  >
         <h2>Shipping rates finder</h2>
         <h4></h4>
         <p1>DEPARTURE
             <!-- per metterli orizzontale ho abbassato la grandezza degli input e automaticamento messo inline-->
             <!-- MODIFICATO WEIDTH :CALC IN INPUTS NEL FILE CSS-->
-            <input class="Country" type="text" name="Country" placeholder="Country" />
+            <input class="Country" type="text" name="senderCountry" placeholder="Country" />
 
 
-            <input class="Postal Code" type="text" name="Postal code" placeholder="Postal Code" />
+            <input class="Postal Code" type="text" name="senderPostCode" placeholder="Postal Code" />
 
-            <input class="City" type="text" name="City" placeholder="City" /> </p1>
+            <input class="City" type="text" name="senderCity" placeholder="City" /> </p1>
 
         <!-- ho inserito il button al centro e nel file css ho aggiunto il margin per posizionarlo -->
 
@@ -37,19 +37,24 @@
 
         <h3></h3>
         <p3>DESTINATION
-            <input class="Country" type="text" name="Country" placeholder="Country" />
+            <input class="Country" type="text" name="receiverCountry" placeholder="Country" />
             <h4></h4>
+            <input class="Postal Code" type="text" name="receiverPostCode" placeholder="Postal code" />
+            <input class="City" type="text" name="receiverCity" placeholder="City" /> </p3>
+<p></p>
+<p>AGGIUNGI VALORI</p>
+                <input class="height"  type="text" name="height" value="30"   placeholder="Height"/>
+            <input class="width" type="text" name="width"        value="20"     placeholder="Width" />
+        <input class="depth" type="text" name="depth"  value="10"            placeholder="Depth" />
+        <input class="weight" type="text" name="weight" value="1"     placeholder="Weight" />
 
-            <input class="Postal Code" type="text" name="Postal code" placeholder="Postal code" />
-
-
-
-            <input class="City" type="text" name="City" placeholder="City" /> </p3>
-
-        <button onclick="visualizza('form')">Inizia la ricerca</button>
+        <button type="submit">Fai richiesta</button>
 
 
     </form>
+    <div id="data-container">
+        <!-- I dati verranno inseriti qui -->
+    </div>
 </div>
 
 <!-- Inizio codice DIV #immagine  HO AGGIUNTO IL PLACEHOLDER CHE METTE SUGGERIMENTI A SCOMPARSA-->
@@ -58,6 +63,7 @@
 
         </textarea>
 </formato ></div>
+<div id="output"></div>
 
 <!-- -->
 <!-- Site footer -->
@@ -93,7 +99,48 @@
         </div>
     </div>
 </footer>
-<script language="JavaScript" type="text/javascript"  src="js/jscript.js"></script>
+<script >
+    const form = document.getElementById('form');
+    form.addEventListener('submit', (event) => {
+        event.preventDefault(); // evita il refresh della pagina al submit del form
+
+        // raccogli i dati del form
+        const formData = new FormData(form);
+        const senderCountry = formData.get('senderCountry');
+        const senderPostCode = formData.get('senderPostCode');
+        // altri campi...
+
+        // crea una richiesta HTTP POST con i dati del form
+        const request = new XMLHttpRequest();
+        request.open('POST', ' http://127.0.0.1:8000/getRates');
+        request.onload = () => {
+            // gestisci la risposta
+            const data = JSON.parse(request.responseText);
+
+            // costruisci il contenuto HTML da visualizzare
+            let htmlContent = `
+            <h2>Dati ricevuti:</h2>
+            <ul>
+               <li>Portale: ${data.portalName}</li>
+        <li>Corriere: ${data.courierName}</li>
+        <li>Prezzo: ${data.price}</li>
+        <li>Tipologia di ritiro: ${data.pickupType}</li>
+        <li>Tipologia di consegna: ${data.deliveryType}</li>
+        <li>Assicurazione: ${data.assicurazione}</li>
+        <li>Contrassegno: ${data.contrassegno}</li>
+        <li>Data di ritiro: ${data.pickupDate}</li>
+        <li>Tempo stimato di consegna: ${data.deliveryTime.min} - ${data.deliveryTime.max} ore</li>
+        <li>Sconti o promo speciali: ${data.bonusCredits}</li>
+      </ul>
+    `;
+
+            // aggiorna il contenuto del div con i dati ricevuti
+            const dataContainer = document.getElementById('data-container');
+            dataContainer.innerHTML = htmlContent;
+        }
+        request.send(formData);
+    });
+</script>
 </body>
 
 </html>

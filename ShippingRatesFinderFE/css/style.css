@@ -71,17 +71,21 @@ form {
     width: 90%;
     background: #222;
     padding: 35px;
-    padding-bottom: 90px;
+    padding-bottom: 30px;
     overflow: hidden;
     -moz-border-radius: 40px;
     -webkit-border-radius: 20px;
     border-radius: 20%;
 
 }
+@media screen and (min-width: 770px)  {
+    form{
+        padding-bottom: 30px;
+    }
+}
 
-
-
-
+@media screen and (min-width: 1536px) {
+}
 
 input {
     width: calc(100% - 10px);
@@ -90,7 +94,9 @@ input {
     border-radius: 3px;
     vertical-align: middle;
     background:black;
+
 }
+
 @media screen and (min-width: 576px){
     input{
 
@@ -127,6 +133,19 @@ input {
         background:black;
     }
 }
+@media screen and (min-width: 576px) {
+    input.height,input.depth,input.weight,input.width{
+        width: calc(22% - 10px);
+        padding: 5px;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        vertical-align: middle;
+        background:black;
+    }
+
+}
+
+
 
 input:hover, select:hover {
     outline: none;
@@ -216,7 +235,7 @@ button {
     font-size: 16px;
     color: #fff;
     cursor: pointer;
-   position: absolute;
+   position: relative;
 
     left: 45%;
     top:80%;
@@ -225,11 +244,11 @@ button {
 
 }
 
-@media screen and (min-width: px){
+@media screen and (min-width: 770px){
     button{
         position: absolute;
-           top: 90%;
-        left: 60px;
+           top: 24%;
+        left: 70%;
 
     }
 }
