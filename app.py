@@ -7,17 +7,19 @@
 [ok] https://www.spedirecomodo.it/
 [ok] https://www.spedirebest.it/
 [] https://www.ioinvio.it/
-[] https://spediamo.it/
+[ok] https://spediamo.it/
 [x] https://www.paccofacile.it/
 [] https://www.dvaexpress.it/
 [ok] https://www.mysmartcourier.it/
 '''
+import time
 
 import requests
 import json
 from bs4 import BeautifulSoup
 import configparser
-import datetime
+from datetime import datetime
+
 
 from flask import Flask, jsonify, request
 from urllib3.exceptions import InsecureRequestWarning
@@ -267,6 +269,98 @@ def spedireComodo(height, width, depth, weight, senderCountry, senderCity, sende
     }
     def getLocalita(query):
         localita=s.post('https://www.spedirecomodo.it/Shipping/GetAddress', headers=header1, data={'dataType':'json','nazione':'IT','terminericerca':'{}'.format(query)}, verify=False)
+        localita=json.loads(localita.content)
+        if len(localita)==1:
+            return localita[0]['Id']
+        else:
+            print('errore')
+
+    payload={
+        'PackageTipoCollo': '0',
+        'PackageNazioneNome': 'Italy',
+        'PackageXNazione': 'IT',
+        'PackageXSelectedCap': 'Grumo Nevano 80028 (NA)',
+        'PackageXCap': '80028',
+        'PackageXIdLocalita': str(getLocalita(senderCity)),
+        'PackageYNazione': 'IT',
+        'PackageYSelectedCap': 'Frattamaggiore 80027 (NA)',
+        'PackageYCap': '80027',
+        'PackageYIdLocalita': str(getLocalita(receiverCity)),
+        'PackagePeso': str(weight),
+        'PackageHeight': str(height),
+        'PackageWidth': str(width),
+        'PackageDepth': str(depth)
+    }
+    r = s.post('https://www.spedirecomodo.it/', headers=header1, data=payload, allow_redirects=True)
+    r = s.get('https://www.spedirecomodo.it/Shipping/ShipCouriers', allow_redirects=True)
+    soup = BeautifulSoup(r.content, 'html.parser')
+    parsed=[]
+    tables=soup.findAll('div', {"class": 'row-custom courier-list'})
+    for table in tables:
+        rows=table.findAll('div', {'class':'card card-couriers position-relative'})
+        for row in rows:
+            courier=row.find('span', {'class':'row ship-subtitle'}).text.strip()
+            costo=round(float(row.find('div', {'class':'protection-text'}).text.strip().replace(',','.'))*IVA,2)
+            dataRitiro='{}/{}'.format(row.find('span', {'class':'pick-up'}).text.strip().split(' ')[1],datetime.date.today().year)
+            #idCorriere=row.previousSibling.previousSibling.previousSibling['value']
+            #details: https://www.spedirecomodo.it/Home/GetCourierInfo?idCourier={ID}
+            extraServices=[item['alt'] for item in row.find('div', {'class':'p-3 align-items-center'}).findAll('img')[:-1]]
+            assicurazione='si' if 'AssicurazioneOpzionale' in extraServices else 'no'
+            minDeliveryTime,maxDeliveryTime=row.find('div', {'class':'col-6 text-left couriers-title pt-3'}).next_element.strip().split(' ')[1][:-1].split('/')
+            pickupType, deliveryType = ('normal', 'normal') if courier!='UPS' else ('point', 'point')
+            parsed.append(
+                {'portalName': 'spedireComodo', 'courierName': courier, 'price': costo, 'pickupType': pickupType,
+                 'deliveryType': deliveryType, 'assicurazione': assicurazione, 'contrassegno': 'no',
+                 'pickupDate': dataRitiro, 'deliveryTime': {'min': minDeliveryTime, 'max': maxDeliveryTime},
+                 'bonusCredits': 'si'})
+        return json.dumps(parsed)
+
+#spediamoDotIt ok
+def spediamoDotIt(height, width, depth, weight, senderCountry, senderCity, senderPostCode, receiverCountry,
+                      receiverCity, receiverPostCode):
+    #TODO: tutto si basa a partire dalle province, sistemare in modo che venga autodeterminato dalla città e dal CAP
+    provinceList=s.get('https://api.spediamo.it/v1/countries/IT/provinces')
+    province='NA'
+    townsList=s.get('https://api.spediamo.it/v1/countries/IT/provinces/{}/towns'.format(province))
+    #find item in townsList
+    #get first pickup date available
+    r = s.get('https://api.spediamo.it/v1/shipments/settings?__time={}&type=DOMESTIC'.format(str(time.time()).split('.')[0]))
+    data = json.loads(r.content)
+    dataRitiro = data['pickupDate']['value']
+    #senderCountry, senderPostalCode, senderProvince, senderTown and recipient's one are MANDATORY, otherwise wrong price
+    payload={
+        'allMandatory': 'false',
+        'requestedPickupDate':dataRitiro,
+        'packages': '1:{}:{}:{}:{}:'.format(str(weight),str(height),str(width),str(depth)),
+        'type': 'DOMESTIC',
+        'updateRecipient': 'false',
+        'updateSender': 'false',
+        'senderCountry': senderCountry,
+        'senderPostalCode': senderPostCode,
+        'senderProvince': 'GE',
+        'senderTown': senderCity,
+        'recipientCountry': receiverCountry,
+        'recipientPostalCode':receiverPostCode,
+        'recipientProvince':'NA',
+        'recipientTown':receiverCity
+    }
+    parsed=[]
+    r=s.post('https://api.spediamo.it/v1/shipments', data=payload)
+    data = json.loads(r.content)
+    costo=data['totalPrice']['value']
+    courier=data['courier']
+    minDeliveryTime= (datetime.strptime(data['expectedDeliveryDate']['value'],'%Y-%m-%d')-datetime.strptime(dataRitiro,'%Y-%m-%d')).days * 24
+    parsed.append(
+        {'portalName': 'spedireComodo', 'courierName': courier, 'price': costo, 'pickupType': 'normal',
+         'deliveryType': 'normal', 'assicurazione': 'si', 'contrassegno': 'si',
+         'pickupDate': dataRitiro, 'deliveryTime': {'min': minDeliveryTime, 'max': minDeliveryTime},
+         'bonusCredits': 'si'})
+
+def paccoFacile()
+
+
+    def getLocalita(query):
+        localita=s.get('https://www.paccofacile.it/ajax/shipment/search_locality?word={}&country_iso=IT'.format(query))
         localita=json.loads(localita.content)
         if len(localita)==1:
             return localita[0]['Id']
