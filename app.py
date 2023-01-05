@@ -13,14 +13,11 @@
 [ok] https://www.mysmartcourier.it/
 '''
 import time
-
 import requests
 import json
 from bs4 import BeautifulSoup
 import configparser
 from datetime import datetime
-
-
 from flask import Flask, jsonify, request
 from urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
