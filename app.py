@@ -461,10 +461,10 @@ def DVAExpress(height, width, depth, weight, senderCountry, senderCity, senderPo
              'deliveryTime': {'min': minDeliveryTime, 'max': minDeliveryTime}, 'bonusCredits': 'no'})
         return json.dumps(parsed)
 
-def algo(height, width, depth, weight, senderCountry, senderCity, senderPostCode, receiverCounty, receiverCity, receiverPostCode):
+def algo(height, width, depth, weight, senderCountry, senderCity, senderPostCode, receiverCountry, receiverCity, receiverPostCode):
     return jsonify(
-        mySmartCourier(height, width, depth, weight, senderCountry, senderCity, senderPostCode, receiverCounty,
-                       receiverCity, receiverPostCode))
+        mySmartCourier(height, width, depth, weight, senderCountry, senderCity, senderPostCode, receiverCountry,
+                       receiverCity, receiverPostCode)[1:-1])
 
 @app.route('/')
 def index():
@@ -476,7 +476,7 @@ def getJsonRates():
     result = algo(height=request.form['height'], width=request.form['width'], depth=request.form['depth'],
                   weight=request.form['weight'], senderCountry=request.form['senderCountry'],
                   senderCity=request.form['senderCity'], senderPostCode=request.form['senderPostCode'],
-                  receiverCounty=request.form['receiverCountry'], receiverCity=request.form['receiverCity'],
+                  receiverCountry=request.form['receiverCountry'], receiverCity=request.form['receiverCity'],
                   receiverPostCode=request.form['receiverPostCode'])  # return jsonify(result)
     return result
 
