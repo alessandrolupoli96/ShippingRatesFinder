@@ -16,54 +16,46 @@
 <body>
 <div class="testbox">
     <!-- da aggiungere se subtmit -->
-    <form action="/"  >
+    <form id="form">
         <h2>Shipping rates finder</h2>
         <h4></h4>
         <p1>DEPARTURE
-            <!-- per metterli orizzontale ho abbassato la grandezza degli input e automaticamento messo inline-->
+            <!-- per metterli orizzontali ho abbassato la grandezza degli input e automaticamento messo inline-->
             <!-- MODIFICATO WEIDTH :CALC IN INPUTS NEL FILE CSS-->
             <input class="Country" type="text" name="senderCountry" placeholder="Country" />
-
-
             <input class="Postal Code" type="text" name="senderPostCode" placeholder="Postal Code" />
-
-            <input class="City" type="text" name="senderCity" placeholder="City" /> </p1>
+            <input class="City" type="text" name="senderCity" placeholder="City" />
+        </p1>
 
         <!-- ho inserito il button al centro e nel file css ho aggiunto il margin per posizionarlo -->
-
-
-
-        <!-- -->
-
         <h3></h3>
         <p3>DESTINATION
             <input class="Country" type="text" name="receiverCountry" placeholder="Country" />
             <h4></h4>
             <input class="Postal Code" type="text" name="receiverPostCode" placeholder="Postal code" />
-            <input class="City" type="text" name="receiverCity" placeholder="City" /> </p3>
-<p></p>
-<p>AGGIUNGI VALORI</p>
-                <input class="height"  type="text" name="height" value="30"   placeholder="Height"/>
-            <input class="width" type="text" name="width"        value="20"     placeholder="Width" />
-        <input class="depth" type="text" name="depth"  value="10"            placeholder="Depth" />
-        <input class="weight" type="text" name="weight" value="1"     placeholder="Weight" />
+            <input class="City" type="text" name="receiverCity" placeholder="City" />
+        </p3>
+        <h3></h3>
+        <p3>AGGIUNGI VALORI</p3>
+        <input class="height" type="text" name="height" value="30" placeholder="Height" />
+        <input class="width" type="text" name="width" value="20" placeholder="Width" />
+        <input class="depth" type="text" name="depth" value="10" placeholder="Depth" />
+        <input class="weight" type="text" name="weight" value="1" placeholder="Weight" />
 
         <button type="submit">Fai richiesta</button>
-
-
     </form>
-    <div id="data-container">
-        <!-- I dati verranno inseriti qui -->
-    </div>
+
+</div>
+<div id="data-container">
+    <!-- I dati verranno inseriti qui -->
 </div>
 
 <!-- Inizio codice DIV #immagine  HO AGGIUNTO IL PLACEHOLDER CHE METTE SUGGERIMENTI A SCOMPARSA-->
-<div id="form" style="display:none"><formato>
-        <textarea name="messaggio" id="messaggio" cols="30" rows="10" placeholder="qui usciranno i results">
+
 
         </textarea>
 </formato ></div>
-<div id="output"></div>
+
 
 <!-- -->
 <!-- Site footer -->
@@ -99,7 +91,7 @@
         </div>
     </div>
 </footer>
-<script >
+<script>
     const form = document.getElementById('form');
     form.addEventListener('submit', (event) => {
         event.preventDefault(); // evita il refresh della pagina al submit del form
@@ -108,14 +100,22 @@
         const formData = new FormData(form);
         const senderCountry = formData.get('senderCountry');
         const senderPostCode = formData.get('senderPostCode');
-        // altri campi...
+        const senderCity = formData.get('senderCity');
+        const receiverCountry = formData.get('receiverCountry');
+        const receiverPostCode = formData.get('receiverPostCode');
+        const receiverCity = formData.get('receiverCity');
+        const  height = formData.get('height');
+        const width = formData.get('width');
+        const depth = formData.get('depth');
+        const weight = formData.get('weight');
 
         // crea una richiesta HTTP POST con i dati del form
         const request = new XMLHttpRequest();
-        request.open('POST', ' http://127.0.0.1:8000/getRates');
+        request.open('POST', 'http://127.0.0.1:5000/getRates');
         request.onload = () => {
             // gestisci la risposta
             const data = JSON.parse(request.responseText);
+            console.log(data)
 
             // costruisci il contenuto HTML da visualizzare
             let htmlContent = `
@@ -129,7 +129,6 @@
         <li>Assicurazione: ${data.assicurazione}</li>
         <li>Contrassegno: ${data.contrassegno}</li>
         <li>Data di ritiro: ${data.pickupDate}</li>
-        <li>Tempo stimato di consegna: ${data.deliveryTime.min} - ${data.deliveryTime.max} ore</li>
         <li>Sconti o promo speciali: ${data.bonusCredits}</li>
       </ul>
     `;

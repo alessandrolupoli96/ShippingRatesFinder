@@ -135,12 +135,18 @@ input {
 }
 @media screen and (min-width: 576px) {
     input.height,input.depth,input.weight,input.width{
-        width: calc(22% - 10px);
+        width: calc(16% - 10px);
         padding: 5px;
         border: 1px solid #ccc;
         border-radius: 3px;
         vertical-align: middle;
         background:black;
+    }
+
+}
+@media screen and (min-width: 772px) {
+    input.weight,input.width,input.depth,input.height{
+        width: calc(10% - 10px)
     }
 
 }
