@@ -15,47 +15,32 @@
 </head>
 <body>
 <div class="testbox">
-    <!-- da aggiungere se subtmit -->
+
     <form id="form">
         <h2>Shipping rates finder</h2>
 
         <p3>DEPARTURE
-            <!-- per metterli orizzontali ho abbassato la grandezza degli input e automaticamento messo inline-->
-            <!-- MODIFICATO WEIDTH :CALC IN INPUTS NEL FILE CSS-->
             <input class="Country" type="text" name="senderCountry"  value="Italia" placeholder="Country" />
-            <input type="text" id="postcode" name="senderPostCode" list="postcodes"  autocomplete="off"placeholder="postalCode or City"> <br>
+            <input type="text" id="postcode" name="senderPostCode" list="postcodes"  autocomplete="off"placeholder="PostalCode or City"> <br>
             <datalist id="postcodes"></datalist>
         </p3>
-
         <p3>DESTINATION
             <input class="Country" type="text" name="receiverCountry" value="Italia" placeholder="Country" />
             <input  type="text" name="receiverPostCode" id="postalcode" list="postalcodes" autocomplete="off" placeholder="PostalCode or City" />
             <datalist id="postalcodes"></datalist>
         </p3>
-
-
        <br>
         <p3>AGGIUNGI VALORI</p3>
         <input class="height" type="text" name="height" value="30" placeholder="Height" />
         <input class="width" type="text" name="width" value="20" placeholder="Width" />
         <input class="depth" type="text" name="depth" value="10" placeholder="Depth" />
         <input class="weight" type="text" name="weight" value="1" placeholder="Weight" />
-
         <button type="submit" >Fai richiesta</button>
     </form>
-    <!-- Crea l'elenco datalist per l'autocompletamento -->
-
 </div>
 <div id="data-container">
-    <!-- I dati verranno inseriti qui -->
+    <!-- the data will be entered here -->
 </div>
-
-<!-- Inizio codice DIV #immagine  HO AGGIUNTO IL PLACEHOLDER CHE METTE SUGGERIMENTI A SCOMPARSA-->
-
-
-        </textarea>
-</formato ></div>
-
 <div class="data-container"></div>
 <!-- -->
 <!-- Site footer -->
@@ -67,7 +52,7 @@
                 <p class="text-justify">SHIPPING RATES FINDER</p>
                 <hr>
             </div>
-            <!-- SVILUPPATORI -->
+            <!-- developers -->
 
             <div class="col-xs-6 col-md-3">
                 <h6>DEVELOPERS</h6>
@@ -92,29 +77,9 @@
     </div>
 </footer>
  <script type="text/javascript" src="js/script.js" > </script>
-
-<script>/*
-    function validateForm() {
-        var senderCountry = document.forms["form"]["senderCountry"].value;
-        var receiverCountry = document.forms["form"]["receiverCountry"].value;
-
-        if (senderCountry == "" || receiverCountry == "") {
-            alert("I campi 'Country sender' e 'Country receiver' devono essere compilati prima di inviare il modulo.");
-            return false;
-        }
-    }
-*/
-</script>
-
-
-
 <script type="text/javascript" src="js/controlloinput.js"></script>
-
-
 <script type="text/javascript" src="js/checkpc.js" ></script>
 <script type="text/javascript" src="js/checkps2.js"></script>
-
 </body>
-
 </html>
 
