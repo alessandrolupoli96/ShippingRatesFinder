@@ -22,14 +22,19 @@ from datetime import datetime
 import requests
 from bs4 import BeautifulSoup
 from flask import Flask, jsonify, request
+from flask_cors import CORS, cross_origin
 from urllib3.exceptions import InsecureRequestWarning
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 config = configparser.ConfigParser()
-config.read('config.ini')
+config.read('ShippingRatesFinderBE/config.ini')
 IVA = 1 + float(config['Config']['IVA']) / 100
-# height=10; width=20; depth=30; weight=1; senderCountry=receiverCountry='IT'; senderCity='80028'; receiverCity='rapallo'
+
+debug=True
+
+if debug==True:
+    height=10; width=20; depth=30; weight=1; senderCountry=receiverCountry='IT'; senderCity='80028'; receiverCity='rapallo'
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36",
@@ -40,27 +45,31 @@ s = requests.session()
 s.headers.update(headers)
 
 app = Flask(__name__)
+cors = CORS(app)
+app.config['CORS_HEADERS'] = 'Content-Type'
+
 
 '''
-forma parsed={
+template parsed=[{
     'portalName': stringa contente il nome del portale,
     'courierName': stringa contenente il nome del corriere,
-    'price': float costo di spedizione (coprensiva IVA),
-    'pickupType': tipologia di ritiro (normal=ritiro presso domicilio, point=ritiro presso point, mix=sia domicilio sia point),
-    'deliveryType': tipologia di consegna (normal=ritiro presso domicilio, point=ritiro presso point, mix=sia domicilio sia point),
-    'assicurazione': assicurazione presente (stringa 'si', stringa 'no'),
+    'price': (float 2decimali) costo di spedizione (comprensiva IVA),
+    'pickupType': tipologia di ritiro ('normal'=ritiro presso domicilio, 'point'=ritiro presso point, 'mix'=sia domicilio sia point),
+    'deliveryType': tipologia di consegna ('normal'=ritiro presso domicilio, 'point'=ritiro presso point, 'mix'=sia domicilio sia point),
+    'insurance': assicurazione presente (stringa 'si', stringa 'no'),
     'contrassegno': contrassegno presente (stringa 'si', stringa 'no'),
-    'pickupDate': data ritiro (stringa dd/mm/aa),
-    'deliveryTime': tempo stimata di consegna ({min=intero numero di ore, max=intero numero di ore})
+    'pickupDate': data ritiro (stringa 'dd/mm/aaaa'),
+    'deliveryTime': tempo stimata di consegna ({min=(intero) numero di ore, max=(intero) numero di ore})
     'bonusCredits': possibilità sconti o promo speciali (stringa 'si', stringa 'no')
-}
+},...]
 '''
 
 
 # mySmartCourier ok
 def mySmartCourier(height, width, depth, weight, senderCountry, senderCity, senderPostCode, receiverCountry, receiverCity, receiverPostCode):
+    # Query: requires Country and (City or PostCode)
     def getLocalita(country, query):
-        localita = s.get('https://www.mysmartcourier.it/wp-json/msc/v1/comune/?paese={}&q={}'.format(country,query))  # cap oppure con nome città
+        localita = s.get('https://www.mysmartcourier.it/wp-json/msc/v1/comune/?paese={}&q={}'.format(country,query))
         localita = json.loads(localita.content)
         if len(localita) == 1:
             return str(*localita.keys())
@@ -90,24 +99,24 @@ def mySmartCourier(height, width, depth, weight, senderCountry, senderCity, send
                                          cols[1].findAll('div', {'class': 'fusion-text'}))
             contrassegno, assicurazione = (x.text.strip().split()[-1] for x in
                                            cols[2].findAll('div', {'class': 'fusion-text'})[-1].findAll('p')[1:])
+            minDeliveryTime, maxDeliveryTime = tempoDelivery.split()[0].split('/')
             costo = round(float(
                 cols[3].findAll('div', {'class': 'fusion-text'})[0].find('h2').text.split()[-1].replace(',', '.')) * IVA, 2)
             parsed.append(
                 {'portalName': 'mySmartCourier', 'courierName': courier, 'price': costo, 'pickupType': 'normal',
-                 'deliveryType': 'normal', 'assicurazione': assicurazione, 'pickupDate': dataRitiro,
-                 'deliveryTime': tempoDelivery, 'bonusCredits': 'no'})
-    return json.dumps(parsed)
+                 'deliveryType': 'normal', 'insurance': assicurazione, 'pickupDate': dataRitiro,
+                 'deliveryTime': {'min':minDeliveryTime, 'max':maxDeliveryTime}, 'bonusCredits': 'no'})
+    return parsed
 
 
 # spedireBest ok
 def spedireBest(height, width, depth, weight, senderCountry, senderCity, senderPostCode, receiverCountry, receiverCity, receiverPostCode):
-    # TODO: ricerca località necessariamente con il nome
     # bisogna aggiornare il cookie altrimenti fallisce
-    s = requests.session()
-    s.headers.update(headers)
     login = s.post('https://www.spedirebest.it/api/user',
                    data={'service': 'login', 'email': config['SpedireBest']['user'], 'password': config['SpedireBest']['pass']})
 
+    # Query: requires City
+    # TODO: ricerca località necessariamente con City
     def getLocalita(query):
         localita = s.post('https://www.spedirebest.it/api/localita', data={'service': 'search', 'search': '{}'.format(query)})
         localita = json.loads(localita.content)
@@ -149,33 +158,34 @@ def spedireBest(height, width, depth, weight, senderCountry, senderCity, senderP
     price = float(result['quote']['eur_totale'])
     pickupDate = result['data']['spedizione_data_ritiro']
     parsed.append({'portalName': 'SpedireBest', 'courierName': courierIDs[result['corriere_id']], 'price': price,
-                   'pickupType': 'normal', 'deliveryType': 'normal', 'assicurazione': 'no', 'pickupDate': pickupDate,
+                   'pickupType': 'normal', 'deliveryType': 'normal', 'insurance': 'no', 'pickupDate': pickupDate,
                    'deliveryTime': None, 'bonusCredits': 'no'})
-    return json.dumps(parsed)
+    return parsed
 
 
 # packLink ok
 def packLink(height, width, depth, weight, senderCountry, senderCity, senderPostCode, receiverCountry, receiverCity, receiverPostCode):
-    def getLocalita(query):
-        localita = s.get( 'https://www.packlink.it/default/ajaxpostalcodesrequest?loc=113&contain=true&selected=&original=&zip={}'.format(query))
+    # Query: requires City or PostCode
+    def getLocalita(loc,query):
+        localita = s.get('https://www.packlink.it/default/ajaxpostalcodesrequest?loc={}&contain=true&selected=&original=&zip={}'.format(loc,query))
         localita = json.loads(localita.content)
         if len(localita) == 1:
-            return localita[0]['value']
+            return localita[0]['label'], localita[0]['value']
         else:
             print('errore')
 
+    #location: 113 = Italia
     payload = {
         'HomeForm[locationFrom]': '113',
-        'HomeForm[zipcodeFrom]': str(getLocalita(senderCity)),
-        'HomeForm[fldFrom]': '80028 - Grumo Nevano',
         'HomeForm[locationTo]': '113',
-        'HomeForm[zipcodeTo]': str(getLocalita(receiverCity)),
-        'HomeForm[fldTo]': '80027 - Frattamaggiore',
         'ParcelForm[0][weight]': str(weight),
         'ParcelForm[0][length]': str(depth),
         'ParcelForm[0][width]': str(width),
         'ParcelForm[0][height]': str(height)
     }
+    payload['HomeForm[zipcodeFrom]'], payload['HomeForm[fldFrom]'] = getLocalita('113',senderCity)
+    payload['HomeForm[zipcodeTo]'], payload['HomeForm[fldTo]'] = getLocalita('113',receiverCity)
+
     r = s.post('https://www.packlink.it/', headers=headers, data=payload, allow_redirects=True)
     soup = BeautifulSoup(r.content, 'html.parser')
     data = soup.find('div', {'class': 'com-search-results__quotes-container'})['data-services']
@@ -191,9 +201,9 @@ def packLink(height, width, depth, weight, senderCountry, senderCity, senderPost
         contrassegno = 'si' if row['cash_on_delivery']['offered'] else 'no'
         deliveryTime = int(row['transit_weight'])
         parsed.append({'portalName': 'packLink', 'courierName': courier, 'price': costo, 'pickupType': pickupType,
-                       'deliveryType': deliveryType, 'assicurazione': assicurazione, 'contrassegno': contrassegno,
-                       'pickupDate': dataRitiro, 'deliveryTime': deliveryTime, 'bonusCredits': 'no'})
-    return json.dumps(parsed)
+                       'deliveryType': deliveryType, 'insurance': assicurazione, 'contrassegno': contrassegno,
+                       'pickupDate': dataRitiro, 'deliveryTime': {'min': deliveryTime, 'max': deliveryTime}, 'bonusCredits': 'no'})
+    return parsed
 
 
 # truckPooling ok
@@ -270,10 +280,10 @@ def truckPooling(height, width, depth, weight, senderCountry, senderCity, sender
         assicurazione = 'si' if 'insurance' in extraServices else 'no'
         contrassegno = 'si' if 'codContanti' in extraServices else 'no'
         parsed.append({'portalName': 'mySmartCourier', 'courierName': courier, 'price': costo, 'pickupType': pickupType,
-                       'deliveryType': deliveryType, 'assicurazione': assicurazione, 'contrassegno': contrassegno,
+                       'deliveryType': deliveryType, 'insurance': assicurazione, 'contrassegno': contrassegno,
                        'pickupDate': dataRitiro, 'deliveryTime': {'min': deliveryTime, 'max': deliveryTime},
                        'bonusCredits': 'no'})
-    return json.dumps(parsed)
+    return parsed
 
 
 # spedireComodo ok
@@ -333,10 +343,10 @@ def spedireComodo(height, width, depth, weight, senderCountry, senderCity, sende
             pickupType, deliveryType = ('normal', 'normal') if courier != 'UPS' else ('point', 'point')
             parsed.append(
                 {'portalName': 'spedireComodo', 'courierName': courier, 'price': costo, 'pickupType': pickupType,
-                 'deliveryType': deliveryType, 'assicurazione': assicurazione, 'contrassegno': 'no',
+                 'deliveryType': deliveryType, 'insurance': assicurazione, 'contrassegno': 'no',
                  'pickupDate': dataRitiro, 'deliveryTime': {'min': minDeliveryTime, 'max': maxDeliveryTime},
                  'bonusCredits': 'si'})
-        return json.dumps(parsed)
+        return parsed
 
 
 # spediamoDotIt ok
@@ -377,9 +387,10 @@ def spediamoDotIt(height, width, depth, weight, senderCountry, senderCity, sende
         dataRitiro, '%Y-%m-%d')).days * 24
     parsed.append(
         {'portalName': 'spedireComodo', 'courierName': courier, 'price': costo, 'pickupType': 'normal',
-         'deliveryType': 'normal', 'assicurazione': 'si', 'contrassegno': 'si',
+         'deliveryType': 'normal', 'insurance': 'si', 'contrassegno': 'si',
          'pickupDate': dataRitiro, 'deliveryTime': {'min': minDeliveryTime, 'max': minDeliveryTime},
          'bonusCredits': 'si'})
+    return parsed
 
 #DVAExpress ok
 
@@ -457,20 +468,21 @@ def DVAExpress(height, width, depth, weight, senderCountry, senderCity, senderPo
             dataRitiro=str(datetime.date.today())
         parsed.append(
             {'portalName': 'DVAExpress', 'courierName': courier, 'price': costo, 'pickupType': 'normal',
-             'deliveryType': 'normal', 'assicurazione': assicurazione, 'pickupDate': dataRitiro,
+             'deliveryType': 'normal', 'insurance': assicurazione, 'pickupDate': dataRitiro,
              'deliveryTime': {'min': minDeliveryTime, 'max': minDeliveryTime}, 'bonusCredits': 'no'})
-        return json.dumps(parsed)
+        return parsed
 
 def algo(height, width, depth, weight, senderCountry, senderCity, senderPostCode, receiverCountry, receiverCity, receiverPostCode):
-    return jsonify(
-        mySmartCourier(height, width, depth, weight, senderCountry, senderCity, senderPostCode, receiverCountry,
-                       receiverCity, receiverPostCode)[1:-1])
+    test=mySmartCourier(height, width, depth, weight, senderCountry, senderCity, senderPostCode, receiverCountry,
+                       receiverCity, receiverPostCode)
+    return test
 
 @app.route('/')
 def index():
-    return "hello"
+    return "POST requests only."
 
 @app.route("/getRates", methods=["POST"])
+@cross_origin()
 def getJsonRates():
     # input variables: height, width, depth, weight, senderCountry, senderCity, senderPostCode, receiverCountry, receiverCity, receiverPostCode
     result = algo(height=request.form['height'], width=request.form['width'], depth=request.form['depth'],
@@ -478,7 +490,7 @@ def getJsonRates():
                   senderCity=request.form['senderCity'], senderPostCode=request.form['senderPostCode'],
                   receiverCountry=request.form['receiverCountry'], receiverCity=request.form['receiverCity'],
                   receiverPostCode=request.form['receiverPostCode'])  # return jsonify(result)
-    return result
+    return jsonify(result)
 
 
 if __name__ == "__main__":
