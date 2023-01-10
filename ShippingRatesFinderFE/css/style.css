@@ -78,7 +78,7 @@ h4 {
 
     color:red;
     animation: handshake 0.9s ease-in-out infinite;
-    animation-iteration-count: 10;
+    animation-iteration-count: 3;
 
 }
 
