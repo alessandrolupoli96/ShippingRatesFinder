@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang='eng'>
+<html lang='eng' xmlns="http://www.w3.org/1999/html">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>Shipping rates finder</title>
@@ -56,7 +56,7 @@
         </textarea>
 </formato ></div>
 
-
+<div class="data-container"></div>
 <!-- -->
 <!-- Site footer -->
 <footer class="site-footer">
@@ -91,55 +91,8 @@
         </div>
     </div>
 </footer>
-<script>
-    const form = document.getElementById('form');
-    form.addEventListener('submit', (event) => {
-        event.preventDefault(); // evita il refresh della pagina al submit del form
-
-        // raccogli i dati del form
-        const formData = new FormData(form);
-        const senderCountry = formData.get('senderCountry');
-        const senderPostCode = formData.get('senderPostCode');
-        const senderCity = formData.get('senderCity');
-        const receiverCountry = formData.get('receiverCountry');
-        const receiverPostCode = formData.get('receiverPostCode');
-        const receiverCity = formData.get('receiverCity');
-        const  height = formData.get('height');
-        const width = formData.get('width');
-        const depth = formData.get('depth');
-        const weight = formData.get('weight');
-
-        // crea una richiesta HTTP POST con i dati del form
-        const request = new XMLHttpRequest();
-        request.open('POST', 'http://127.0.0.1:5000/getRates');
-        request.onload = () => {
-            // gestisci la risposta
-            const data = JSON.parse(request.responseText);
-            console.log(data)
-
-            // costruisci il contenuto HTML da visualizzare
-            let htmlContent = `
-            <h2>Dati ricevuti:</h2>
-            <ul>
-               <li>Portale: ${data.portalName}</li>
-        <li>Corriere: ${data.courierName}</li>
-        <li>Prezzo: ${data.price}</li>
-        <li>Tipologia di ritiro: ${data.pickupType}</li>
-        <li>Tipologia di consegna: ${data.deliveryType}</li>
-        <li>Assicurazione: ${data.assicurazione}</li>
-        <li>Contrassegno: ${data.contrassegno}</li>
-        <li>Data di ritiro: ${data.pickupDate}</li>
-        <li>Sconti o promo speciali: ${data.bonusCredits}</li>
-      </ul>
-    `;
-
-            // aggiorna il contenuto del div con i dati ricevuti
-            const dataContainer = document.getElementById('data-container');
-            dataContainer.innerHTML = htmlContent;
-        }
-        request.send(formData);
-    });
-</script>
+ <script type="text/javascript" src="js/script.js" > </script>
+<script type="text/javascript" src="js/controlloinput.js"></script>
 </body>
 
 </html>
